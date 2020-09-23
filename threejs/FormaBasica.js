@@ -57,8 +57,11 @@
     //Objtos
     var cubo = new THREE.Mesh(geocubo, material);
 
-    //Desplazamientos   
+    //Rotación y después traslación
+    //Orden en el que se indican las rotaciones, traslaciones y escalado
+    //no importan. Se hacen sobre el sistema de coordenadas fijo (0,0,0).
     cubo.position.x = -1;
+    cubo.rotation.y = Math.PI/4
 
     //Organización
     scene.add(cubo);
