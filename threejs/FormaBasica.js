@@ -80,7 +80,7 @@
 
  //Variación de la escena entre frames
  function update() {
-
+    angulo += Math.PI/100;
  }
 
 
