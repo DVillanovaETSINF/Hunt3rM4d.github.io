@@ -36,12 +36,12 @@
     // Razón de aspecto
     var ar = window.innerWidth / window.innerHeight;
     // Instanciar cámara (fovy, ar, near, far)
-    camera = new THREE.PerspectiveCamera(50, ar, 0.1, 100);
+    camera = new THREE.PerspectiveCamera(50, ar, 0.1, 1000);
     scene.add(camera);
     //Situar la cámara
-    camera.position.set(300, 400, 300);
+    camera.position.set(175, 250, 175);
     //Dirección en la que mira la cámara
-    camera.lookAt( new THREE.Vector3(0,2,0));
+    camera.lookAt( new THREE.Vector3(0,125,0));
  }
 
 
@@ -52,6 +52,7 @@
     var material = new THREE.MeshBasicMaterial({color: 'red',wireframe: true});
 
     //Geometrias
+    var geosuelo = new THREE.PlaneGeometry(1000,1000,10,10)
     var geobase = new THREE.CylinderGeometry(50,50,15,32);
     var geoeje = new THREE.BoxGeometry(18,120,12);
     var geoesparrago = new THREE.CylinderGeometry(20,20,18,32);
@@ -61,31 +62,40 @@
     var geomano = new THREE.CylinderGeometry(15,15,40,32);
 
     //Objetos
+    var suelo = new THREE.Mesh(geosuelo, material);
+    suelo.rotation.x = Math.PI / 2;
     var robot = new THREE.Object3D();
     robot.position.y = 10
     var base = new THREE.Mesh(geobase,material);
     var brazo = new THREE.Object3D();
     var eje = new THREE.Mesh(geoeje,material);
+    eje.position.y = 60;
     var esparrago = new THREE.Mesh(geoesparrago,material);
     esparrago.rotation.x = Math.PI / 2;
     var rotula = new THREE.Mesh(georotula,material);
     rotula.position.y = 120;
     var antebrazo = new THREE.Object3D();
+    antebrazo.position.y = 120;
     var disco = new THREE.Mesh(geodisco,material);
     var nervio1 = new THREE.Mesh(geonervio,material);
+    nervio1.position.y = 40;
     nervio1.position.x = 12;
     nervio1.position.z = 12;
     var nervio2 = new THREE.Mesh(geonervio,material);
+    nervio2.position.y = 40;
     nervio2.position.x = -12;
     nervio2.position.z = 12;
     var nervio3 = new THREE.Mesh(geonervio,material);
+    nervio3.position.y = 40;
     nervio3.position.x = -12;
     nervio3.position.z = -12;
     var nervio4 = new THREE.Mesh(geonervio,material);
+    nervio4.position.y = 40;
     nervio4.position.x = 12;
     nervio4.position.z = -12;
     var mano = new THREE.Mesh(geomano,material);
     mano.position.y = 80;
+    mano.rotation.x = Math.PI/2;
 
     //Organizacion de escena
     antebrazo.add(disco);
@@ -105,6 +115,7 @@
     robot.add(base);
     
     scene.add(robot);
+    scene.add(suelo);
     //scene.add(new THREE.AxisHelper(3));
  }
 
