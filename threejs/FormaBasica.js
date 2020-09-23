@@ -57,7 +57,7 @@
     //Objtos
     var cubo = new THREE.Mesh(geocubo, material);
 
-    //Desplazamientos
+    //Desplazamientos   
     cubo.position.x = -1;
 
     //Organización
