@@ -62,6 +62,7 @@
 
     //Objetos
     var robot = new THREE.Object3D();
+    robot.position.y = 10
     var base = new THREE.Mesh(geobase,material);
     var brazo = new THREE.Object3D();
     var eje = new THREE.Mesh(geoeje,material);
@@ -83,6 +84,8 @@
     var nervio4 = new THREE.Mesh(geonervio,material);
     nervio4.position.x = 12;
     nervio4.position.z = -12;
+    var mano = new THREE.Mesh(geomano,material);
+    mano.position.y = 80;
 
     //Organizacion de escena
     antebrazo.add(disco);
@@ -90,6 +93,7 @@
     antebrazo.add(nervio2);
     antebrazo.add(nervio3);
     antebrazo.add(nervio4);
+    antebrazo.add(mano);
 
     brazo.add(eje);
     brazo.add(esparrago);
