@@ -67,21 +67,21 @@
     var esfera = new THREE.Mesh(geoesfera, material);
     esfera.position.x = 3;
     
-    esferacubo = new THREE.Object3D();
-    esferacubo.position.y = 0.5;
-    esferacubo.rotation.y = angulo;
+    esferaCubo = new THREE.Object3D();
+    esferaCubo.position.y = 0.5;
+    esferaCubo.rotation.y = angulo;
 
-    //Organización
-    esferacubo.add(cubo);
-    esferacubo.add(esfera);
-    scene.add(esferacubo);
+    //Organización de la escena
+    esferaCubo.add(cubo);
+    esferaCubo.add(esfera);
+    scene.add(esferaCubo);
     scene.add(new THREE.AxisHelper(3));
  }
 
  //Variación de la escena entre frames
  function update() {
     angulo += Math.PI/100;
-    esferacubo.rotation.y = angulo;
+    esferaCubo.rotation.y = angulo;
  }
 
 
