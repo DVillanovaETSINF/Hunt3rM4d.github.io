@@ -58,7 +58,8 @@
     var cubo = new THREE.Mesh(geocubo, material);
 
     //Organización
-    scene.add(cubo)
+    scene.add(cubo);
+    scene.add(new THREE.AxisHelper(3));
  }
 
  //Variación de la escena entre frames
