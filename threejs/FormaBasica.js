@@ -55,7 +55,7 @@
     var geocubo = new THREE.BoxGeometry(2,2,2);
 
     //Objtos
-    var cubo = new THREE.Mesh();
+    var cubo = new THREE.Mesh(geocubo, material);
 
     //Organización
     scene.add(cubo)
