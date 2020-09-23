@@ -36,10 +36,10 @@
     // Razón de aspecto
     var ar = window.innerWidth / window.innerHeight;
     // Instanciar cámara (fovy, ar, near, far)
-    camera = new THREE.PerspectiveCamera(50, ar, 0.1, 100);
+    camera = new THREE.PerspectiveCamera(50, ar, 0.1, 1000);
     scene.add(camera);
     //Situar la cámara
-    camera.position.set(0.5, 3, 9);
+    camera.position.set(300, 400, 300);
     //Dirección en la que mira la cámara
     camera.lookAt( new THREE.Vector3(0,2,0));
  }
