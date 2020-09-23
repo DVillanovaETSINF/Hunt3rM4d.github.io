@@ -39,9 +39,9 @@
     camera = new THREE.PerspectiveCamera(50, ar, 0.1, 100);
     scene.add(camera);
     //Situar la cámara
-    camera.position.set(0.5, 2, 5);
+    camera.position.set(0.5, 3, 9);
     //Dirección en la que mira la cámara
-    camera.lookAt( new THREE.Vector3(0,0,0));
+    camera.lookAt( new THREE.Vector3(0,2,0));
  }
 
 
@@ -70,6 +70,14 @@
     esferaCubo = new THREE.Object3D();
     esferaCubo.position.y = 0.5;
     esferaCubo.rotation.y = angulo;
+
+    //Modelo externo
+    var loader = new THREE.ObjectLoader();
+    loader.load('models/soldado/soldado.json',
+                 function(obj) {
+                     obj.position.set(0,1,0);
+                     cubo.add(obj);
+    });
 
     //Organización de la escena
     esferaCubo.add(cubo);
