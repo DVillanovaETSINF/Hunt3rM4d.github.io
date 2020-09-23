@@ -53,6 +53,7 @@
 
     //Geometrias
     var geocubo = new THREE.BoxGeometry(2,2,2);
+    var geoesfera = new THREE.SphereGeometry(1,30,30);
 
     //Objtos
     var cubo = new THREE.Mesh(geocubo, material);
@@ -63,8 +64,12 @@
     cubo.position.x = -1;
     cubo.rotation.y = Math.PI/4;
 
+    var esfera = new THREE.Mesh(geoesfera, material);
+    esfera.position.x = 3;
+    
     //Organización
     scene.add(cubo);
+    scene.add(esfera);
     scene.add(new THREE.AxisHelper(3));
  }
 
