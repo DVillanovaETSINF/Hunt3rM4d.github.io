@@ -67,9 +67,14 @@
     var esfera = new THREE.Mesh(geoesfera, material);
     esfera.position.x = 3;
     
+    esferacubo = new THREE.Object3D();
+    esferacubo.position.y = 0.5;
+    esferacubo.rotation.y = angulo;
+
     //Organización
-    scene.add(cubo);
-    scene.add(esfera);
+    esferacubo.add(cubo);
+    esferacubo.add(esfera);
+    scene.add(esferacubo);
     scene.add(new THREE.AxisHelper(3));
  }
 
