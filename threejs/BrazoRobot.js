@@ -51,6 +51,17 @@
     //Materiales
     var material = new THREE.MeshBasicMaterial({color: 'red',wireframe: true});
 
+    //Geometría pinzas
+    var geopinza = new THREE.Geometry();
+    //Añadir vértices componen caras
+    geopinza.vertices.push(
+      new THREE.Vector3(),
+    );
+    //Añadir caras triangulares, 1 vector3 por cara
+    geometry.faces.push(
+      new THREE.Vector3(),
+    );
+    
     //Geometrias
     var geosuelo = new THREE.PlaneGeometry(1000,1000,10,10)
     var geobase = new THREE.CylinderGeometry(50,50,15,32);
@@ -60,6 +71,7 @@
     var geodisco = new THREE.CylinderGeometry(22,22,6,32);
     var geonervio = new THREE.BoxGeometry(4,80,4)
     var geomano = new THREE.CylinderGeometry(15,15,40,32);
+    
 
     //Objetos
     var suelo = new THREE.Mesh(geosuelo, material);
