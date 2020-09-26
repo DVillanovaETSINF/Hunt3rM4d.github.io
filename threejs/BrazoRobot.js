@@ -25,7 +25,7 @@
     //Tomar el tamaño máximo posible
     renderer.setSize(window.innerWidth, window.innerHeight);
     //Dar color de borrado al renderer (En RGB hexadecimal)
-    renderer.setClearColor(new THREE.Color(0x000BBBB));
+    renderer.setClearColor(new THREE.Color(0xFFFFFF));
     //Añadir un canvas al container
     document.getElementById("container").appendChild(renderer.domElement);
     
@@ -63,22 +63,34 @@
       new THREE.Vector3(0,20,-4),
       new THREE.Vector3(19,20,-4),
       new THREE.Vector3(0,0,-4),
-      new THREE.Vector3(19,0,-4)
+      new THREE.Vector3(19,0,-4),
+      new THREE.Vector3(38,4,0),
+      new THREE.Vector3(38,4,-4),
+      new THREE.Vector3(38,16,-4),
+      new THREE.Vector3(38,16,0)
     );
     //Añadir caras triangulares, 1 vector3 por cara
     geopinza.faces.push(
-      new THREE.Vector3(0,1,2),
-      new THREE.Vector3(0,2,3),
-      new THREE.Vector3(3,2,4),
-      new THREE.Vector3(2,5,4),
-      new THREE.Vector3(1,7,2),
-      new THREE.Vector3(7,5,2),
-      new THREE.Vector3(6,7,0),
-      new THREE.Vector3(7,1,0),
-      new THREE.Vector3(6,0,3),
-      new THREE.Vector3(6,3,4),
-      new THREE.Vector3(4,5,6),
-      new THREE.Vector3(5,7,6)
+      new THREE.Face3(0,1,2),
+      new THREE.Face3(0,2,3),
+      new THREE.Face3(3,2,4),
+      new THREE.Face3(2,5,4),
+      new THREE.Face3(6,7,0),
+      new THREE.Face3(7,1,0),
+      new THREE.Face3(6,0,3),
+      new THREE.Face3(6,3,4),
+      new THREE.Face3(4,5,6),
+      new THREE.Face3(5,7,6),
+      new THREE.Face3(1,8,11),
+      new THREE.Face3(1,11,2),
+      new THREE.Face3(2,11,5),
+      new THREE.Face3(11,10,5),
+      new THREE.Face3(8,9,10),
+      new THREE.Face3(8,10,11),
+      new THREE.Face3(7,9,8),
+      new THREE.Face3(7,8,1),
+      new THREE.Face3(7,5,9),
+      new THREE.Face3(5,10,9)
     );
     
     //Geometrias
@@ -124,30 +136,33 @@
     nervio4.position.y = 40;
     nervio4.position.x = 12;
     nervio4.position.z = -12;
+    var mano_wrapper = new THREE.Object3D();
+    mano_wrapper.position.y = 80;
     var mano = new THREE.Mesh(geomano,material);
-    mano.position.y = 80;
     mano.rotation.x = Math.PI/2;
     var pinzas = new THREE.Object3D();
-    pinzas.position.x = 12
-    var pinza_izq = new THREE.Mesh(geopinza, material_solido);
-    pinza_izq.position.z = 10;
-    var pinza_der = new THREE.Mesh(geopinza,material_solido);
-    pinza_der.position.z = -10;
-    pinza_der.rotation.x = Math.PI;
+    pinzas.position.x = 12;
+    pinzas.position.y = -10;
+    var pinza_izq = new THREE.Mesh(geopinza, material);
+    pinza_izq.position.z = -10;
+    var pinza_der = new THREE.Mesh(geopinza,material);
+    pinza_der.position.z = 10;
+    
     
 
     //Organizacion de escena
     pinzas.add(pinza_izq);
     pinzas.add(pinza_der);
 
-    mano.add(pinzas);
+    mano_wrapper.add(pinzas);
+    mano_wrapper.add(mano);
 
     antebrazo.add(disco);
     antebrazo.add(nervio1);
     antebrazo.add(nervio2);
     antebrazo.add(nervio3);
     antebrazo.add(nervio4);
-    antebrazo.add(mano);
+    antebrazo.add(mano_wrapper);
 
     brazo.add(eje);
     brazo.add(esparrago);
@@ -160,7 +175,7 @@
     
     scene.add(robot);
     scene.add(suelo);
-    //scene.add(new THREE.AxisHelper(3));
+    //scene.add(new THREE.AxisHelper(500));
  }
 
  //Variación de la escena entre frames
