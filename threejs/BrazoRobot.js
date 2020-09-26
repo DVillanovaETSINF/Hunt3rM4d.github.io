@@ -50,16 +50,35 @@
 
     //Materiales
     var material = new THREE.MeshBasicMaterial({color: 'red',wireframe: true});
+    var material_solido = new THREE.MeshBasicMaterial({color: 'blue',wireframe: false});
 
     //Geometría pinzas
     var geopinza = new THREE.Geometry();
     //Añadir vértices componen caras
     geopinza.vertices.push(
-      new THREE.Vector3(),
+      new THREE.Vector3(0,0,0),
+      new THREE.Vector3(19,0,0),
+      new THREE.Vector3(19,20,0),
+      new THREE.Vector3(0,20,0),
+      new THREE.Vector3(0,20,-4),
+      new THREE.Vector3(19,20,-4),
+      new THREE.Vector3(0,0,-4),
+      new THREE.Vector3(19,0,-4)
     );
     //Añadir caras triangulares, 1 vector3 por cara
-    geometry.faces.push(
-      new THREE.Vector3(),
+    geopinza.faces.push(
+      new THREE.Vector3(0,1,2),
+      new THREE.Vector3(0,2,3),
+      new THREE.Vector3(3,2,4),
+      new THREE.Vector3(2,5,4),
+      new THREE.Vector3(1,7,2),
+      new THREE.Vector3(7,5,2),
+      new THREE.Vector3(6,7,0),
+      new THREE.Vector3(7,1,0),
+      new THREE.Vector3(6,0,3),
+      new THREE.Vector3(6,3,4),
+      new THREE.Vector3(4,5,6),
+      new THREE.Vector3(5,7,6)
     );
     
     //Geometrias
@@ -108,8 +127,21 @@
     var mano = new THREE.Mesh(geomano,material);
     mano.position.y = 80;
     mano.rotation.x = Math.PI/2;
+    var pinzas = new THREE.Object3D();
+    pinzas.position.x = 12
+    var pinza_izq = new THREE.Mesh(geopinza, material_solido);
+    pinza_izq.position.z = 10;
+    var pinza_der = new THREE.Mesh(geopinza,material_solido);
+    pinza_der.position.z = -10;
+    pinza_der.rotation.x = Math.PI;
+    
 
     //Organizacion de escena
+    pinzas.add(pinza_izq);
+    pinzas.add(pinza_der);
+
+    mano.add(pinzas);
+
     antebrazo.add(disco);
     antebrazo.add(nervio1);
     antebrazo.add(nervio2);
