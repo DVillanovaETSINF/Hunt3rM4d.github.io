@@ -129,9 +129,9 @@
     mano.rotation.x = Math.PI/2;
     var pinzas = new THREE.Object3D();
     pinzas.position.x = 12
-    var pinza_izq = new THREE.Mesh(geopinza, material_solido);
+    var pinza_izq = new THREE.Mesh(geopinza, material);
     pinza_izq.position.z = 10;
-    var pinza_der = new THREE.Mesh(geopinza,material_solido);
+    var pinza_der = new THREE.Mesh(geopinza,material);
     pinza_der.position.z = -10;
     pinza_der.rotation.x = Math.PI;
     
