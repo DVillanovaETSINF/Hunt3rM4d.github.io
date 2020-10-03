@@ -25,7 +25,7 @@ function init() {
    //Tomar el tamaño máximo posible
    renderer.setSize(window.innerWidth, window.innerHeight);
    //Dar color de borrado al renderer (En RGB hexadecimal)
-   renderer.setClearColor(new THREE.Color(0x000BBBB));
+   renderer.setClearColor(new THREE.Color(0xFFFFFF));
    //Añadir un canvas al container
    document.getElementById("container").appendChild(renderer.domElement);
    
@@ -63,22 +63,36 @@ function loadScene() {
    new THREE.Vector3(0,20,-4),
    new THREE.Vector3(19,20,-4),
    new THREE.Vector3(0,0,-4),
-   new THREE.Vector3(19,0,-4)
+   new THREE.Vector3(19,0,-4),
+   new THREE.Vector3(38,4,0),
+   new THREE.Vector3(38,4,-4),
+   new THREE.Vector3(38,16,-4),
+   new THREE.Vector3(38,16,0)
    );
    //Añadir caras triangulares, 1 vector3 por cara
    geopinza.faces.push(
-   new THREE.Vector3(0,1,2),
-   new THREE.Vector3(0,2,3),
-   new THREE.Vector3(3,2,4),
-   new THREE.Vector3(2,5,4),
-   new THREE.Vector3(1,7,2),
-   new THREE.Vector3(7,5,2),
-   new THREE.Vector3(6,7,0),
-   new THREE.Vector3(7,1,0),
-   new THREE.Vector3(6,0,3),
-   new THREE.Vector3(6,3,4),
-   new THREE.Vector3(4,5,6),
-   new THREE.Vector3(5,7,6)
+   new THREE.Face3(0,1,2),
+   new THREE.Face3(0,2,3),
+   new THREE.Face3(3,2,4),
+   new THREE.Face3(2,5,4),
+   new THREE.Face3(1,7,2),
+   new THREE.Face3(7,5,2),
+   new THREE.Face3(6,7,0),
+   new THREE.Face3(7,1,0),
+   new THREE.Face3(6,0,3),
+   new THREE.Face3(6,3,4),
+   new THREE.Face3(4,5,6),
+   new THREE.Face3(5,7,6),
+   new THREE.Face3(1,8,11),
+   new THREE.Face3(1,11,2),
+   new THREE.Face3(2,11,5),
+   new THREE.Face3(11,10,5),
+   new THREE.Face3(8,9,10),
+   new THREE.Face3(8,10,11),
+   new THREE.Face3(7,9,8),
+   new THREE.Face3(7,8,1),
+   new THREE.Face3(7,5,9),
+   new THREE.Face3(5,10,9)
    );
    
    //Geometrias
@@ -128,12 +142,13 @@ function loadScene() {
    mano.position.y = 80;
    mano.rotation.x = Math.PI/2;
    var pinzas = new THREE.Object3D();
-   pinzas.position.x = 12
+   pinzas.position.x = 12;
+   pinzas.position.z = -12;
+   pinzas.rotation.x = Math.PI / 2;
    var pinza_izq = new THREE.Mesh(geopinza, material);
    pinza_izq.position.z = 10;
    var pinza_der = new THREE.Mesh(geopinza,material);
    pinza_der.position.z = -10;
-   pinza_der.rotation.x = Math.PI;
    
 
    //Organizacion de escena
@@ -163,15 +178,8 @@ function loadScene() {
    //scene.add(new THREE.AxisHelper(3));
 }
 
-//Variación de la escena entre frames
-function update() {
-   //angulo += Math.PI/100;
-}
-
-
-function render() {
-   //Construir el frame
-   requestAnimationFrame(render);
-   update();
-   renderer.render(scene, camera);
+function render()
+{
+	requestAnimationFrame( render );
+	renderer.render( scene, camera );
 }

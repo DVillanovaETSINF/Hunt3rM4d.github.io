@@ -25,7 +25,7 @@
     //Tomar el tamaño máximo posible
     renderer.setSize(window.innerWidth, window.innerHeight);
     //Dar color de borrado al renderer (En RGB hexadecimal)
-    renderer.setClearColor(new THREE.Color(0x000BBBB));
+    renderer.setClearColor(new THREE.Color(0x00BBBB));
     //Añadir un canvas al container
     document.getElementById("container").appendChild(renderer.domElement);
     
