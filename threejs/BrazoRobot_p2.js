@@ -13,11 +13,47 @@ var renderer, scene, camera;
 
 //Otras globales
 var robot, angulo = 0;
+var cameraControls;
+
+//Camara cenital
+var l = -100;
+var r = 100;
+var b = -100;
+var t = 100;
+var planta;
 
 //Acciones
 init();
 loadScene();
 render();
+
+function setCameras(ar) {
+   var origen = new THREE.Vector3(0,0,0);
+
+   //Camara perspectiva
+   // Instanciar cámara (fovy, ar, near, far)
+   camera = new THREE.PerspectiveCamera(50, ar, 0.1, 1000);
+   //Situar la cámara
+   camera.position.set(175, 250, 175);
+   //Dirección en la que mira la cámara
+   camera.lookAt( new THREE.Vector3(0,125,0));
+
+   //CAMARA PLANTA
+  /*if(ar > 1) {
+      planta = new THREE.OrthographicCamera(l*ar, r*ar, t, b, -20, 400);
+   } else {
+      planta = new THREE.OrthographicCamera(l,r,t/ar,b/ar,-20,400);
+   }*/
+   planta = new THREE.OrthographicCamera(l,r,t,b,-20,400);
+
+   planta.position.set(0,300,0);
+   planta.lookAt(origen);
+   planta.up = new THREE.Vector3(0,0,-1);
+   planta.updateProjectionMatrix();
+
+   scene.add(camera);
+   scene.add(planta)
+}
 
 function init() {
    //Configurar el motor de render y el canvas
@@ -26,6 +62,8 @@ function init() {
    renderer.setSize(window.innerWidth, window.innerHeight);
    //Dar color de borrado al renderer (En RGB hexadecimal)
    renderer.setClearColor(new THREE.Color(0xFFFFFF));
+   //No auto clear para poder tener dos cámaras superpuestas
+   renderer.autoClear = false
    //Añadir un canvas al container
    document.getElementById("container").appendChild(renderer.domElement);
    
@@ -33,17 +71,47 @@ function init() {
    scene = new THREE.Scene();
 
    // Camara
-   // Razón de aspecto
    var ar = window.innerWidth / window.innerHeight;
-   // Instanciar cámara (fovy, ar, near, far)
-   camera = new THREE.PerspectiveCamera(50, ar, 0.1, 1000);
-   scene.add(camera);
-   //Situar la cámara
-   camera.position.set(175, 250, 175);
-   //Dirección en la que mira la cámara
-   camera.lookAt( new THREE.Vector3(0,125,0));
+   setCameras(ar);
+
+   //Controlador de camara
+   cameraControls = new THREE.OrbitControls( camera, renderer.domElement);
+   //Punto de interes sobre el que se va a orbitar
+   cameraControls.target.set(0,0,0);
+   //Que no se puedan utilizar las teclas
+   cameraControls.noKeys = true;
+
+   //Captura de eventos --> Tolerancia a resize
+   window.addEventListener('resize',updateAspectRatio);
 }
 
+function updateAspectRatio() {
+   //Ajustar el tamaño del canvas tras redimensionado de la ventana
+   renderer.setSize(window.innerWidth, window.innerHeight);
+
+   //Razon de aspecto
+   var ar = window.innerWidth / window.innerHeight;
+
+   //Camara perspectiva
+   camera.aspect = ar;
+
+   //Que no haga wide Putin meme
+   camera.updateProjectionMatrix();
+
+   //Ajustar caja de la cámara cenital (es necesario?)
+   /*if (ar > 1) {
+      planta.left = l * ar;
+      planta.right = r * ar;
+      planta.bottom = b;
+      planta.top = t;
+   } else {
+      planta.top = t / ar;
+      planta.bottom = b / ar;
+      planta.left = l;
+      planta.right = r;
+   }
+   planta.updateProjectionMatrix();*/
+}
 
 function loadScene() {
    //Construir el grafo de escena
@@ -180,6 +248,24 @@ function loadScene() {
 
 function render()
 {
-	requestAnimationFrame( render );
-	renderer.render( scene, camera );
+   //Siguiente frame
+   requestAnimationFrame( render );
+   
+   //Borrar anterior frame
+   renderer.clear();
+
+   //Renderizar el frame
+   //Camara perspectiva
+   renderer.setViewport(0,0,window.innerWidth,window.innerHeight);
+   renderer.render( scene, camera );
+   
+   //Camara cenital
+   var plantaViewSize;
+   if(window.innerWidth < window.innerHeight) {
+      plantaViewSize = window.innerWidth / 4;
+   } else {
+      plantaViewSize = window.innerHeight / 4;
+   }
+   renderer.setViewport(0,0,plantaViewSize,plantaViewSize);
+   renderer.render(scene,planta);
 }
