@@ -246,7 +246,7 @@ function loadScene() {
    );
    
    //Geometrias
-   var geosuelo = new THREE.PlaneGeometry(1000,1000,10,10)
+   var geosuelo = new THREE.PlaneGeometry(1000,1000,10,10);
    var geobase = new THREE.CylinderGeometry(50,50,15,32);
    var geoeje = new THREE.BoxGeometry(18,120,12);
    var geoesparrago = new THREE.CylinderGeometry(20,20,18,32);
