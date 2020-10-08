@@ -21,10 +21,10 @@ var stats;
 var effectController;
 
 //Camara cenital
-var l = -100;
-var r = 100;
-var b = -100;
-var t = 100;
+var l = -50;
+var r = 50;
+var b = -50;
+var t = 50;
 var planta;
 
 //Angulo del suelo
@@ -51,7 +51,7 @@ var antes = Date.now();
 //Acciones
 initPhysicWorld();
 init();
-loadScene();
+//loadScene();
 setupKeyControls();
 setupGui();
 loadWorld();
@@ -65,11 +65,27 @@ function esfera( radio, posicion, material ){
 	this.body.position.copy( posicion );
 	this.visual = new THREE.Mesh( new THREE.SphereGeometry( radio ), 
 		          new THREE.MeshBasicMaterial( {wireframe: true, color: 'blue'} ) );
-	this.visual.position.copy( this.body.position );
+   this.visual.position.copy( this.body.position );
+}
+
+//Construcción cajas
+// dim = Vec3 (x,y,z)
+// pos = Vec3 (x,y,z)
+function caja( dim, posicion, material) {
+   var masa = 0;
+   var x = Number(dim.x)
+   var y = Number(dim.y)
+   var z = Number(dim.z) 
+   this.body = new CANNON.Body( {mass: masa, material: material} );
+	this.body.addShape( new CANNON.Box(dim) );
+	this.body.position.copy(posicion);
+	this.visual = new THREE.Mesh( new THREE.BoxGeometry(x,y+5,z), 
+		          new THREE.MeshBasicMaterial( {wireframe: false, color: 'green' } ) );
+   this.visual.position.copy( this.body.position );
 }
 
 /**
- * Iniciar mundo físico con suelo y pelota
+ * Iniciar mundo físico 
  */
 function initPhysicWorld() {
    //Reglas del mundo
@@ -85,15 +101,9 @@ function initPhysicWorld() {
 
    var esferaMaderaContactMaterial = new CANNON.ContactMaterial(matMadera,matEsfera, 
                                                                {friction: 0.2,
-                                                                restitution: 0.7});
+                                                                restitution: 0.15});
    world.addContactMaterial(esferaMaderaContactMaterial);
 
-   //Suelo
-   laberinto = new CANNON.Body({mass: 0, material: matMadera});
-   var groundShape = new CANNON.Box(new CANNON.Vec3(50,5,50));
-   laberinto.addShape(groundShape, new CANNON.Vec3(0,0,0));
-
-   world.addBody(laberinto)
 }
 
 function setupKeyControls() {
@@ -106,22 +116,18 @@ function setupKeyControls() {
          //Flecha izq
          case 37:
          izq_pres = true;
-         console.log("Izq_pres",izq_pres);
          break;
          //Flecha arr
          case 38:
          arr_pres = true;
-         console.log("Arr_pres",arr_pres);
          break;
          //Flecha der
          case 39:
          der_pres = true;      
-         console.log("Der_pres",der_pres);
          break;
          //Flecha abj
          case 40:
          abj_pres = true;
-         console.log("Abj_pres",abj_pres);
          break;
      }
    };
@@ -131,22 +137,18 @@ function setupKeyControls() {
           //Flecha izq
           case 37:
           izq_pres = false;
-          console.log("Izq_pres",izq_pres);
           break;
           //Flecha arr
           case 38:
           arr_pres = false;
-          console.log("Arr_pres",arr_pres);
           break;
           //Flecha der
           case 39:
           der_pres = false;     
-          console.log("Der_pres",der_pres);  
           break;
           //Flecha abj
           case 40:
           abj_pres = false;
-          console.log("Abj_pres",abj_pres);
           break;
       }
     };
@@ -169,11 +171,11 @@ function setCameras(ar) {
    camera.lookAt( new THREE.Vector3(0,0,0));
 
    //CAMARA PLANTA
-   planta = new THREE.OrthographicCamera(l,r,t,b,-20,400);
+   planta = new THREE.OrthographicCamera(l,r,t,b,-20,100);
 
-   planta.position.set(0,300,0);
+   planta.position.set(0,50,0);
    planta.lookAt(origen);
-   planta.up = new THREE.Vector3(0,0,-1);
+   planta.up = new THREE.Vector3(0,0,1);
    planta.updateProjectionMatrix();
 
    scene.add(camera);
@@ -236,8 +238,7 @@ function update() {
 
    var deltaSg = reloj.getDelta();
    world.step(deltaSg);
-   esfera.visual.position.copy(esfera.body.position);
-   esfera.visual.quaternion.copy(esfera.body.quaternion);
+   
 
    //Incremento de los ángulos en función del tiempo (Por testear)
    if(izq_pres) anguloX += deltaSg*velocGiro;
@@ -246,16 +247,22 @@ function update() {
    if(arr_pres) anguloZ += deltaSg*velocGiro;
 
    //Límite de giro de 45º del plano
-   if(anguloX < (-Math.PI)/4) anguloX = -Math.PI/4;
-   if(anguloX > Math.PI/4) anguloX = Math.PI/4;
-   if(anguloZ < (-Math.PI)/4) anguloZ = -Math.PI/4;
-   if(anguloZ > Math.PI/4) anguloZ = Math.PI/4;
+   if(anguloX < (-Math.PI)/6) anguloX = -Math.PI/6;
+   if(anguloX > Math.PI/6) anguloX = Math.PI/6;
+   if(anguloZ < (-Math.PI)/6) anguloZ = -Math.PI/6;
+   if(anguloZ > Math.PI/6) anguloZ = Math.PI/6;
 
    //Antiguo act. del suelo
-   suelo.rotation.y = anguloZ;
-   suelo.rotation.x = (Math.PI / 2) + anguloX;
+   //suelo.rotation.y = anguloZ;
+   //suelo.rotation.x = (Math.PI / 2) + anguloX;
    
-   laberinto.quaternion.setFromEuler(anguloX,0,anguloZ)
+   //Actualizacion obj. físicos
+   esfera.visual.position.copy(esfera.body.position);
+   esfera.visual.quaternion.copy(esfera.body.quaternion);
+
+   laberinto.body.quaternion.setFromEuler(anguloX,0,anguloZ);
+   laberinto.visual.position.copy(laberinto.body.position);
+   laberinto.visual.quaternion.copy(laberinto.body.quaternion);
 }
 
 //Antigua carga de escena (solo objetos visuales)
@@ -283,13 +290,22 @@ function loadWorld()
    //Generar la esfera
    var materialEsfera;
 	for( i=0; i<world.materials.length; i++){
-		if( world.materials[i].name === "sphereMaterial" ) materialEsfera = world.materials[i];
+		if( world.materials[i].name === "matEsfera" ) materialEsfera = world.materials[i];
    }
    
    //Radio, posicion, material
-   esfera = new esfera( 1, new CANNON.Vec3( 0, 5, 0 ), materialEsfera );
+   esfera = new esfera( 1, new CANNON.Vec3( 0, 6, 0 ), materialEsfera );
    world.addBody( esfera.body );
-	scene.add( esfera.visual );
+   scene.add( esfera.visual );
+   
+   //Suelo
+   var materialParedes;
+   for( i=0; i<world.materials.length; i++){
+		if( world.materials[i].name === "matMadera" ) materialParedes = world.materials[i];
+   }
+   laberinto = new caja( new CANNON.Vec3(50,5,50), new CANNON.Vec3(0,0,0), materialParedes);
+   world.addBody(laberinto.body);
+   scene.add(laberinto.visual);
 }
 
 function render()
