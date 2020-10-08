@@ -3,6 +3,7 @@
  * Dibujar formas básicas y un modelo importado.
  * Muestra el bucle típico de inicialización, escena y render.
  * 
+ * @requires three.min_r96.js, coordinates.js, orbitControls.js, dat.gui.js, tween.min.js, stats.min.js
  * Autor: David Villanova Aparisi
  * Fecha: 23-09-2020
  */
@@ -13,6 +14,7 @@ var renderer, scene, camera;
 
 //Otras globales
 var robot, angulo = 0;
+var base, brazo, antebrazo, pinzas, pinza_izq, pinza_der;
 var cameraControls;
 
 //Camara cenital
@@ -22,10 +24,90 @@ var b = -100;
 var t = 100;
 var planta;
 
+// Monitor de recursos
+var stats;
+// Global GUI
+var effectController;
+
 //Acciones
 init();
 loadScene();
+setupKeyControls();
+setupGui();
 render();
+
+
+function setupKeyControls() {
+   document.onkeydown = function(e) {
+     switch (e.keyCode) {
+       //Flecha izq
+       case 37:
+       robot.position.z += 1;
+       planta.position.z += 1;
+       break;
+       //Flecha arr
+       case 38:
+       robot.position.x -= 1;
+       planta.position.x -= 1;
+       break;
+       //Flecha der
+       case 39:
+       robot.position.z -= 1;
+       planta.position.z -= 1;
+       break;
+       //Flecha abj
+       case 40:
+       robot.position.x += 1;
+       planta.position.x += 1;
+       break;
+     }
+   };
+ }
+
+
+function setupGui() {
+   effectController = {
+      giroBase: 0,
+      giroBrazo: 0,
+      giroAntebrazoY: 0,
+      giroAntebrazoZ: 0,
+      giroPinza: 0,
+      aperturaPinza: 0
+   };
+
+   var gui = new dat.GUI()
+   var h = gui.addFolder("Control Robot");
+   var sensorBase = h.add(effectController, "giroBase",-180,180,1).name("Giro Base");
+   var sensorBrazo = h.add(effectController, "giroBrazo", -45,45,1).name("Giro Brazo");
+   var sensorAntebrazoY = h.add(effectController,"giroAntebrazoY",-180,180,1).name("Giro Antebrazo Y");
+   var sensorAntebrazoZ = h.add(effectController,"giroAntebrazoZ",-90,90,1).name("Giro Antebrazo Z");
+   var sensorPinza = h.add(effectController,"giroPinza",-40,220,1).name("Giro Pinza");
+   var sensorAperturaPinza = h.add(effectController,"aperturaPinza",0,15,0.5).name("Apertura Pinza")
+
+   //Callbacks
+   sensorBase.onChange(function(giro) {
+      base.rotation.y = giro * Math.PI / 180;
+   });
+   sensorBrazo.onChange(function(giro) {
+      brazo.rotation.z = giro * Math.PI / 180;
+   });
+   sensorAntebrazoY.onChange(function(giro) {
+      antebrazo.rotation.y = giro * Math.PI / 180;
+   });
+   sensorAntebrazoZ.onChange(function(giro) {
+      antebrazo.rotation.z = giro * Math.PI / 180;
+   });
+   sensorPinza.onChange(function(giro) {
+      pinzas.rotation.z = giro * Math.PI / 180;
+      pinzas.position.x = Math.cos(pinzas.rotation.z) * 12;
+      pinzas.position.z = Math.sin(pinzas.rotation.z) * 12;
+   });
+   sensorAperturaPinza.onChange(function(desp) {
+      pinza_der.position.z = 4 + desp / 2;
+      pinza_izq.position.z = 0 - desp / 2;
+   });
+
+}
 
 function setCameras(ar) {
    var origen = new THREE.Vector3(0,0,0);
@@ -177,17 +259,17 @@ function loadScene() {
    //Objetos
    var suelo = new THREE.Mesh(geosuelo, material);
    suelo.rotation.x = Math.PI / 2;
-   var robot = new THREE.Object3D();
+   robot = new THREE.Object3D();
    robot.position.y = 10
-   var base = new THREE.Mesh(geobase,material);
-   var brazo = new THREE.Object3D();
+   base = new THREE.Mesh(geobase,material);
+   brazo = new THREE.Object3D();
    var eje = new THREE.Mesh(geoeje,material);
    eje.position.y = 60;
    var esparrago = new THREE.Mesh(geoesparrago,material);
    esparrago.rotation.x = Math.PI / 2;
    var rotula = new THREE.Mesh(georotula,material);
    rotula.position.y = 120;
-   var antebrazo = new THREE.Object3D();
+   antebrazo = new THREE.Object3D();
    antebrazo.position.y = 120;
    var disco = new THREE.Mesh(geodisco,material);
    var nervio1 = new THREE.Mesh(geonervio,material);
@@ -209,14 +291,15 @@ function loadScene() {
    var mano = new THREE.Mesh(geomano,material);
    mano.position.y = 80;
    mano.rotation.x = Math.PI/2;
-   var pinzas = new THREE.Object3D();
+   pinzas = new THREE.Object3D();
    pinzas.position.x = 12;
-   pinzas.position.z = -12;
    pinzas.rotation.x = Math.PI / 2;
-   var pinza_izq = new THREE.Mesh(geopinza, material);
+   pinza_izq = new THREE.Mesh(geopinza, material);
    pinza_izq.position.z = 14;
-   var pinza_der = new THREE.Mesh(geopinza,material);
+   pinza_izq.position.y = -10;
+   pinza_der = new THREE.Mesh(geopinza,material);
    pinza_der.position.z = -10;
+   pinza_der.position.y = -10;
    
 
    //Organizacion de escena

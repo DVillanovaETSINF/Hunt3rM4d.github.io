@@ -146,7 +146,7 @@ function loadScene() {
    pinzas.position.z = -12;
    pinzas.rotation.x = Math.PI / 2;
    var pinza_izq = new THREE.Mesh(geopinza, material);
-   pinza_izq.position.z = 10;
+   pinza_izq.position.z = 14;
    var pinza_der = new THREE.Mesh(geopinza,material);
    pinza_der.position.z = -10;
    
