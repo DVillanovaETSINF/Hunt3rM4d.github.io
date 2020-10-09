@@ -30,8 +30,8 @@ var planta;
 //Angulo del suelo
 var anguloZ = 0;
 var anguloX = 0;
-//Velocidad de giro (30º/sg)
-var velocGiro = 0.1745329*3;
+//Velocidad de giro (20º/sg)
+var velocGiro = 0.1745329*2;
 //Teclas de movimiento
 var izq_pres, der_pres, arr_pres, abj_pres;
 
@@ -100,7 +100,7 @@ function initPhysicWorld() {
    world.addMaterial(matEsfera);
 
    var esferaMaderaContactMaterial = new CANNON.ContactMaterial(matMadera,matEsfera, 
-                                                               {friction: 0.2,
+                                                               {friction: 0.05,
                                                                 restitution: 0.15});
    world.addContactMaterial(esferaMaderaContactMaterial);
 
@@ -166,7 +166,7 @@ function setCameras(ar) {
    // Instanciar cámara (fovy, ar, near, far)
    camera = new THREE.PerspectiveCamera(50, ar, 0.1, 1000);
    //Situar la cámara
-   camera.position.set(150, 250, 0);
+   camera.position.set(0, 250, 150);
    //Dirección en la que mira la cámara
    camera.lookAt( new THREE.Vector3(0,0,0));
 
@@ -241,10 +241,10 @@ function update() {
    
 
    //Incremento de los ángulos en función del tiempo (Por testear)
-   if(izq_pres) anguloX += deltaSg*velocGiro;
-   if(der_pres) anguloX -= deltaSg*velocGiro;
-   if(abj_pres) anguloZ -= deltaSg*velocGiro;
-   if(arr_pres) anguloZ += deltaSg*velocGiro;
+   if(izq_pres) anguloZ += deltaSg*velocGiro;
+   if(der_pres) anguloZ -= deltaSg*velocGiro;
+   if(abj_pres) anguloX += deltaSg*velocGiro;
+   if(arr_pres) anguloX -= deltaSg*velocGiro;
 
    //Límite de giro de 45º del plano
    if(anguloX < (-Math.PI)/6) anguloX = -Math.PI/6;
