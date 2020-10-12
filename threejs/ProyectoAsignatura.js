@@ -5,45 +5,39 @@
  * 
  * @requires three.min_r96.js, coordinates.js, orbitControls.js, dat.gui.js, tween.min.js, stats.min.js
  * Autor: David Villanova Aparisi
- * Fecha: 08-10-2020
+ * Fecha inicio: 08-10-2020
  */
 
-//Variables de consenso
 // Motor, escena y cámara
 var renderer, scene, camera;
-
-//Otras globales
-var cameraControls;
-
-// Monitor de recursos
-var stats;
-// Global GUI
-var effectController;
-
+//Control camaras
+var focusTopCamera = false;
 //Camara cenital
 var l = -50;
 var r = 50;
 var b = -50;
 var t = 50;
 var planta;
+//Otras globales
+var cameraControls;
 
-//Angulo del suelo
+// Global GUI
+var effectController;
+
+//Angulo del laberinto
 var anguloZ = 0;
 var anguloX = 0;
-//Velocidad de giro (20º/sg)
-var velocGiro = 0.1745329*2;
-//Teclas de movimiento
+//Velocidad de giro (10º/sg)
+var velocGiro = 0.1745329;
+//Booleanos pulsacion teclas de movimiento
 var izq_pres, der_pres, arr_pres, abj_pres;
-
-//Objetos globales
-var suelo;
 
 //Físicas
 //Mundo físico y reloj
 var world, reloj;
 
 //Objetos físicos
-var laberinto, esfera;
+var laberinto, esfera, planoInvis;
 
 //Control tiempo
 var antes = Date.now();
@@ -51,7 +45,6 @@ var antes = Date.now();
 //Acciones
 initPhysicWorld();
 init();
-//loadScene();
 setupKeyControls();
 setupGui();
 loadWorld();
@@ -68,20 +61,68 @@ function esfera( radio, posicion, material ){
    this.visual.position.copy( this.body.position );
 }
 
-//Construcción cajas
-// dim = Vec3 (x,y,z)
-// pos = Vec3 (x,y,z)
-function caja( dim, posicion, material) {
+/**
+ * Función para crear el laberinto (un único CANNON.Body)
+ * junto con todas las cajas especificadas.
+ * 
+ * @param {*} dim: vector de dimensión de los cuerpos 
+ * @param {*} off: vector de offset de los cuerpos
+ * @param {*} mat; vector de materiales visuales
+ * @param {*} matFis; material físico
+ */
+function laberinto(dim, off, mat, matFis) {
    var masa = 0;
-   var x = Number(dim.x)
-   var y = Number(dim.y)
-   var z = Number(dim.z) 
-   this.body = new CANNON.Body( {mass: masa, material: material} );
-	this.body.addShape( new CANNON.Box(dim) );
-	this.body.position.copy(posicion);
-	this.visual = new THREE.Mesh( new THREE.BoxGeometry(x,y+5,z), 
-		          new THREE.MeshBasicMaterial( {wireframe: false, color: 'green' } ) );
-   this.visual.position.copy( this.body.position );
+   this.body = new CANNON.Body( {mass: masa, material: matFis} );
+   this.body.position = new CANNON.Vec3(0,0,0);
+
+   var i;
+   this.visual = new THREE.Object3D();
+   this.visual.position.copy(this.body.position);
+
+   //Añadir shapes
+   for(i = 0; i < dim.length; i++) {
+      //Longitud lados caja
+      var dx = Number(dim[i].x);
+      var dy = Number(dim[i].y);
+      var dz = Number(dim[i].z);
+      
+      //Corrección de offset
+      var ajusteX = dz <= 1 ? dx / 2 : 0;
+      var ajusteZ = dx <= 1 ? dz / 2 : 0;
+
+      var off_i = off[i];
+      off_i = new CANNON.Vec3(off[i].x + ajusteX, off[i].y, off[i].z + ajusteZ);
+
+
+      //Añadir shape
+      var dim_fis_i = new CANNON.Vec3(dim[i].x/2, dim[i].y/2, dim[i].z/2);
+      this.body.addShape( new CANNON.Box(dim_fis_i), off_i);
+
+      //Crear caja y ajustar posición visual
+      var vis_i = new THREE.Mesh( new THREE.BoxGeometry(dx,dy,dz), mat[i]);
+      vis_i.position.x = Number(off_i.x);
+      vis_i.position.y = Number(off_i.y);
+      vis_i.position.z = Number(off_i.z);
+
+      //Añadir la caja a la visual
+      this.visual.add(vis_i);
+   }
+}
+
+//Creación del plano invisible para evitar que vuele la pelota
+function planoInvis(dim,pos,mat,matFis) {
+   var masa = 0;
+   this.body = new CANNON.Body({mass: masa, material: matFis});
+   var dim_fis = new CANNON.Vec3(dim.x/2, dim.y/2, dim.z/2);
+   this.body.addShape( new CANNON.Box(dim_fis));
+   this.body.position.copy(pos);
+   var x = Number(dim.x);
+   var y = Number(dim.y);
+   var z = Number(dim.z);
+   this.visual = new THREE.Mesh( new THREE.BoxGeometry(x,y,z), mat);
+
+   //PROBLEMA: NO SE ESTÁ PONIENDO LA POSICIÓN DEL PLANO 
+   this.visual.position.copy(this.body.position);
 }
 
 /**
@@ -96,14 +137,56 @@ function initPhysicWorld() {
    //Materiales
    var matMadera = new CANNON.Material("matMadera");
    var matEsfera = new CANNON.Material("matEsfera");
+   var matInvis = new CANNON.Material("matInvis");
    world.addMaterial(matMadera);
    world.addMaterial(matEsfera);
+   world.addMaterial(matInvis);
 
    var esferaMaderaContactMaterial = new CANNON.ContactMaterial(matMadera,matEsfera, 
                                                                {friction: 0.05,
-                                                                restitution: 0.15});
+                                                                restitution: 0});
+   var esferaMaderaInvisContactMaterial = new CANNON.ContactMaterial(matInvis,matEsfera,
+                                                                     {friction: 0,
+                                                                      restitution: 1});
    world.addContactMaterial(esferaMaderaContactMaterial);
+   world.addContactMaterial(esferaMaderaInvisContactMaterial);
 
+}
+
+//Actualizar parámetros de las cámaras
+function updateCameras() {
+   
+   var ar = window.innerWidth / window.innerHeight;
+   if(focusTopCamera){
+      //Ajustar frustum camara cenital
+      if (ar > 1) {
+         planta.left = l * ar;
+         planta.right = r * ar;
+         planta.bottom = b;
+         planta.top = t;
+      } else {
+         planta.top = t / ar;
+         planta.bottom = b / ar;
+         planta.left = l;
+         planta.right = r;
+      }
+      planta.updateProjectionMatrix();
+
+      //Razon de aspecto cámara perspectiva a 1
+      camera.aspect = 1;
+      camera.updateProjectionMatrix();
+   } else {
+      //Volver a fijar frustum cuadrado cámara cenital
+      planta.top = t;
+      planta.bottom = b;
+      planta.left = l;
+      planta.right = r;
+      planta.updateProjectionMatrix();
+
+      //Razon de aspecto cámara perspectiva actualizada
+      camera.aspect = ar;
+      camera.updateProjectionMatrix();
+   }
 }
 
 function setupKeyControls() {
@@ -128,6 +211,15 @@ function setupKeyControls() {
          //Flecha abj
          case 40:
          abj_pres = true;
+         break;
+         //Tecla c
+         case 67:
+         focusTopCamera = !focusTopCamera
+         updateCameras();
+         break;
+         //Tecla r
+         case 83:
+         reiniciar();
          break;
      }
    };
@@ -154,9 +246,52 @@ function setupKeyControls() {
     };
  }
 
-//GUI con botón de reinicio
+function reiniciar() {
+   //Fijar angulo del laberinto a 0,0
+   anguloZ = anguloY = 0;
+
+   //Eliminar todo movimiento de la esfera y devolverla a la pos. inic.
+   esfera.body.position = new CANNON.Vec3(-23, 5.1, -23);
+   esfera.body.velocity = new CANNON.Vec3(0,0,0);
+   esfera.body.angularVelocity = new CANNON.Vec3(0,0,0);
+   esfera.body.force = new CANNON.Vec3(0,0,0);
+   esfera.body.inertia = new CANNON.Vec3(0,0,0);
+
+   //Volver a colocar cámaras en su sitio
+   camera.position.set(0,150,50);
+   camera.lookAt(new THREE.Vector3(0,0,0));
+
+   //Reiniciar cameraControls
+   cameraControls.target.set(0,0,0);
+}
+
+//GUI con botón de reinicio, boton alternar cámaras y slider gravedad
 function setupGui() {
-   
+   //Controles
+   effectController = {
+      g: -9.8,
+      altCam: function() {
+         focusTopCamera = !focusTopCamera;
+         updateCameras();
+      },
+      reiniciar: function() {
+         reiniciar();
+      }
+   }
+
+   //Interfaz
+   var gui = new dat.GUI();
+
+   //Construcción menu
+   var h = gui.addFolder("Configuración");
+   var sensorGrav = h.add(effectController,"g", -20, -2, 0.1).name("Gravedad");
+   h.add(effectController, "altCam").name("Alternar vistas");
+
+   gui.add(effectController,"reiniciar").name("Reiniciar");
+
+   sensorGrav.onChange(function(grav) {
+      world.gravity.set(0,grav,0);
+   });
 }
 
 function setCameras(ar) {
@@ -166,14 +301,14 @@ function setCameras(ar) {
    // Instanciar cámara (fovy, ar, near, far)
    camera = new THREE.PerspectiveCamera(50, ar, 0.1, 1000);
    //Situar la cámara
-   camera.position.set(0, 250, 150);
+   camera.position.set(0, 150, 50);
    //Dirección en la que mira la cámara
    camera.lookAt( new THREE.Vector3(0,0,0));
 
    //CAMARA PLANTA
    planta = new THREE.OrthographicCamera(l,r,t,b,-20,100);
 
-   planta.position.set(0,50,0);
+   planta.position.set(0,30,0);
    planta.lookAt(origen);
    planta.up = new THREE.Vector3(0,0,1);
    planta.updateProjectionMatrix();
@@ -219,16 +354,8 @@ function init() {
 function updateAspectRatio() {
    //Ajustar el tamaño del canvas tras redimensionado de la ventana
    renderer.setSize(window.innerWidth, window.innerHeight);
-
-   //Razon de aspecto
-   var ar = window.innerWidth / window.innerHeight;
-
-   //Camara perspectiva
-   camera.aspect = ar;
-
-   //Que no haga wide Putin meme
-   camera.updateProjectionMatrix();
-
+   //Actualizar info camaras
+   updateCameras();
 }
 
 function update() {
@@ -237,9 +364,7 @@ function update() {
    //antes = ahora;
 
    var deltaSg = reloj.getDelta();
-   world.step(deltaSg);
    
-
    //Incremento de los ángulos en función del tiempo (Por testear)
    if(izq_pres) anguloZ += deltaSg*velocGiro;
    if(der_pres) anguloZ -= deltaSg*velocGiro;
@@ -252,10 +377,6 @@ function update() {
    if(anguloZ < (-Math.PI)/6) anguloZ = -Math.PI/6;
    if(anguloZ > Math.PI/6) anguloZ = Math.PI/6;
 
-   //Antiguo act. del suelo
-   //suelo.rotation.y = anguloZ;
-   //suelo.rotation.x = (Math.PI / 2) + anguloX;
-   
    //Actualizacion obj. físicos
    esfera.visual.position.copy(esfera.body.position);
    esfera.visual.quaternion.copy(esfera.body.quaternion);
@@ -263,23 +384,12 @@ function update() {
    laberinto.body.quaternion.setFromEuler(anguloX,0,anguloZ);
    laberinto.visual.position.copy(laberinto.body.position);
    laberinto.visual.quaternion.copy(laberinto.body.quaternion);
-}
 
-//Antigua carga de escena (solo objetos visuales)
-function loadScene() {
-   //Construir el grafo de escena
-   //Materiales
-   var material = new THREE.MeshBasicMaterial({color: 'red',wireframe: true});
+   planoInvis.body.quaternion.setFromEuler(anguloX,0,anguloZ);
+   planoInvis.visual.position.copy(planoInvis.body.position);
+   planoInvis.visual.quaternion.copy(planoInvis.body.quaternion);
 
-   //Geometria del suelo
-   var geosuelo = new THREE.PlaneGeometry(1000,1000,10,10);
-   
-   //Objetos
-   suelo = new THREE.Mesh(geosuelo, material);
-   suelo.rotation.x = Math.PI / 2;
-
-   scene.add(suelo);
-   scene.add(new THREE.AxisHelper(3));
+   world.step(deltaSg);
 }
 
 /**
@@ -287,25 +397,154 @@ function loadScene() {
  */
 function loadWorld()
 {
-   //Generar la esfera
-   var materialEsfera;
-	for( i=0; i<world.materials.length; i++){
-		if( world.materials[i].name === "matEsfera" ) materialEsfera = world.materials[i];
+   //Materiales
+   var matFis, matFisInvis, materialEsfera;
+   for( i=0; i<world.materials.length; i++){
+      if( world.materials[i].name === "matEsfera" ) materialEsfera = world.materials[i];
+      if( world.materials[i].name === "matMadera" ) matFis = world.materials[i];
+      if( world.materials[i].name === "matInvis" ) matFisInvis = world.materials[i];
    }
    
    //Radio, posicion, material
-   esfera = new esfera( 1, new CANNON.Vec3( 0, 6, 0 ), materialEsfera );
+   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 5.1, -23 ), materialEsfera );
    world.addBody( esfera.body );
    scene.add( esfera.visual );
    
-   //Suelo
-   var materialParedes;
-   for( i=0; i<world.materials.length; i++){
-		if( world.materials[i].name === "matMadera" ) materialParedes = world.materials[i];
-   }
-   laberinto = new caja( new CANNON.Vec3(50,5,50), new CANNON.Vec3(0,0,0), materialParedes);
+   
+   //Laberinto
+   var matVisSuelo = new THREE.MeshBasicMaterial( {wireframe: false, color: 'green' } );
+   var matVisPared = new THREE.MeshBasicMaterial( {wireframe: false, color: 'red'});
+   var matInvis = new THREE.MeshBasicMaterial({opacity: 0, transparent: true});
+
+   //laberinto = new caja( new CANNON.Vec3(50,5,50), new CANNON.Vec3(0,0,0), materialParedes);
+   var dim = [
+      new CANNON.Vec3(50,5,50),
+      new CANNON.Vec3(30,5,1),
+      new CANNON.Vec3(15,5,1),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(15,5,1),
+      new CANNON.Vec3(15,5,1),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(15,5,1),
+      new CANNON.Vec3(20,5,1),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(25,5,1),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(30,5,1),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(15,5,1),
+      new CANNON.Vec3(25,5,1),
+      new CANNON.Vec3(1,5,20),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(20,5,1),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(15,5,1),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,10),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(1,5,5),
+      new CANNON.Vec3(10,5,1),
+      new CANNON.Vec3(5,5,1),
+      new CANNON.Vec3(5,5,1)      
+   ];
+
+   var off = [
+      new CANNON.Vec3(0,0,0),
+      new CANNON.Vec3(-25,5,-25),
+      new CANNON.Vec3(10,5,-25),
+      new CANNON.Vec3(-25,5,-25),
+      new CANNON.Vec3(-25,5,-20),
+      new CANNON.Vec3(-5,5,-20),
+      new CANNON.Vec3(15,5,-20),
+      new CANNON.Vec3(10,5,-20),
+      new CANNON.Vec3(25,5,-20),
+      new CANNON.Vec3(-25,5,-15),
+      new CANNON.Vec3(-15,5,-15),
+      new CANNON.Vec3(5,5,-15),
+      new CANNON.Vec3(-25,5,-15),
+      new CANNON.Vec3(-15,5,-15),
+      new CANNON.Vec3(-20,5,-10),
+      new CANNON.Vec3(-5,5,-10),
+      new CANNON.Vec3(-10,5,-10),
+      new CANNON.Vec3(10,5,-10),
+      new CANNON.Vec3(25,5,-10),
+      new CANNON.Vec3(-20,5,-5),
+      new CANNON.Vec3(15,5,-5),
+      new CANNON.Vec3(-25,5,0),
+      new CANNON.Vec3(0,5,0),
+      new CANNON.Vec3(-5,5,0),
+      new CANNON.Vec3(-20,5,5),
+      new CANNON.Vec3(-5,5,5),
+      new CANNON.Vec3(-25,5,5),
+      new CANNON.Vec3(-15,5,5),
+      new CANNON.Vec3(0,5,5),
+      new CANNON.Vec3(-25,5,10),
+      new CANNON.Vec3(-15,5,10),
+      new CANNON.Vec3(5,5,10),
+      new CANNON.Vec3(15,5,10),
+      new CANNON.Vec3(5,5,10),
+      new CANNON.Vec3(25,5,10),
+      new CANNON.Vec3(-20,5,15),
+      new CANNON.Vec3(0,5,15),
+      new CANNON.Vec3(10,5,15),
+      new CANNON.Vec3(20,5,15),
+      new CANNON.Vec3(-25,5,15),
+      new CANNON.Vec3(10,5,15),
+      new CANNON.Vec3(15,5,15),
+      new CANNON.Vec3(-15,5,20),
+      new CANNON.Vec3(-20,5,20),
+      new CANNON.Vec3(0,5,20),
+      new CANNON.Vec3(20,5,20),
+      new CANNON.Vec3(25,5,20),
+      new CANNON.Vec3(-15,5,25),
+      new CANNON.Vec3(0,5,25),
+      new CANNON.Vec3(20,5,25),      
+   ];
+
+   var mat = [
+      matVisSuelo, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared, matVisPared, matVisPared,
+      matVisPared, matVisPared
+   ];
+   
+   laberinto = new laberinto(dim, off, mat, matFis);
+   planoInvis = new planoInvis(new CANNON.Vec3(50,0.5,50), new CANNON.Vec3(0,6,0), matInvis, matFisInvis);
    world.addBody(laberinto.body);
+   world.addBody(planoInvis.body);
    scene.add(laberinto.visual);
+   scene.add(planoInvis.visual);
 }
 
 function render()
@@ -323,16 +562,37 @@ function render()
 
    //Renderizar el frame
    //Camara perspectiva
-   renderer.setViewport(0,0,window.innerWidth,window.innerHeight);
-   renderer.render( scene, camera );
-   
-   //Camara cenital
-   var plantaViewSize;
-   if(window.innerWidth < window.innerHeight) {
-      plantaViewSize = window.innerWidth / 4;
+   if(focusTopCamera) {      
+     
+      renderer.setViewport(0,0,window.innerWidth,window.innerHeight);
+      renderer.render( scene, planta );
+
+      var perspectiveViewSize;
+      if(window.innerWidth < window.innerHeight) {
+         perspectiveViewSize = window.innerWidth / 3;
+      } else {
+         perspectiveViewSize = window.innerHeight / 3;
+      }
+
+      renderer.setViewport(0,0,perspectiveViewSize,perspectiveViewSize);
+      renderer.render(scene, camera);
+
    } else {
-      plantaViewSize = window.innerHeight / 4;
+      
+
+      renderer.setViewport(0,0,window.innerWidth,window.innerHeight);
+      renderer.render( scene, camera );
+   
+      //Camara cenital
+      var plantaViewSize;
+      if(window.innerWidth < window.innerHeight) {
+         plantaViewSize = window.innerWidth / 3;
+      } else {
+         plantaViewSize = window.innerHeight / 3;
+      }
+      renderer.setViewport(0,0,plantaViewSize,plantaViewSize);
+      renderer.render(scene,planta);
    }
-   renderer.setViewport(0,0,plantaViewSize,plantaViewSize);
-   renderer.render(scene,planta);
+
+   
 }
