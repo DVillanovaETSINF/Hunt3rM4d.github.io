@@ -143,7 +143,7 @@ function initPhysicWorld() {
    world.addMaterial(matInvis);
 
    var esferaMaderaContactMaterial = new CANNON.ContactMaterial(matMadera,matEsfera, 
-                                                               {friction: 0.05,
+                                                               {friction: 0.02,
                                                                 restitution: 0});
    var esferaMaderaInvisContactMaterial = new CANNON.ContactMaterial(matInvis,matEsfera,
                                                                      {friction: 0,
@@ -248,14 +248,16 @@ function setupKeyControls() {
 
 function reiniciar() {
    //Fijar angulo del laberinto a 0,0
-   anguloZ = anguloY = 0;
+   anguloZ = anguloX = 0;
+   update();
 
    //Eliminar todo movimiento de la esfera y devolverla a la pos. inic.
-   esfera.body.position = new CANNON.Vec3(-23, 5.1, -23);
+   esfera.body.position = new CANNON.Vec3(-23, 4.1, -23);
    esfera.body.velocity = new CANNON.Vec3(0,0,0);
    esfera.body.angularVelocity = new CANNON.Vec3(0,0,0);
    esfera.body.force = new CANNON.Vec3(0,0,0);
    esfera.body.inertia = new CANNON.Vec3(0,0,0);
+   update();
 
    //Volver a colocar cámaras en su sitio
    camera.position.set(0,150,50);
@@ -406,7 +408,7 @@ function loadWorld()
    }
    
    //Radio, posicion, material
-   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 5.1, -23 ), materialEsfera );
+   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 4.1, -23 ), materialEsfera );
    world.addBody( esfera.body );
    scene.add( esfera.visual );
    
@@ -540,11 +542,12 @@ function loadWorld()
    ];
    
    laberinto = new laberinto(dim, off, mat, matFis);
-   planoInvis = new planoInvis(new CANNON.Vec3(50,0.5,50), new CANNON.Vec3(0,6,0), matInvis, matFisInvis);
+   planoInvis = new planoInvis(new CANNON.Vec3(50,0.5,50), new CANNON.Vec3(0,6.1,0), matInvis, matFisInvis);
    world.addBody(laberinto.body);
    world.addBody(planoInvis.body);
    scene.add(laberinto.visual);
    scene.add(planoInvis.visual);
+   scene.add(THREE.AxisHelper(100,100,100))
 }
 
 function render()
