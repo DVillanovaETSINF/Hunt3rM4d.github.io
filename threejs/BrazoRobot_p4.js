@@ -272,11 +272,8 @@ function loadScene() {
    //Metal sin brillos --> Oxidado?
    var matMetalSB = new THREE.MeshLambertMaterial({color: 'brown', map: texturaMetal});
    //Material pinzas
-   var matPinzas = new THREE.MeshPhongMaterial({color: 'white',
-                                                wireframe: false,
-                                                specular:'white',
-                                                shininess: 50,
-                                                side: THREE.DoubleSide});
+   var matPinzas = new THREE.MeshLambertMaterial({color: 'white',
+                                                wireframe: false});
    //Material rotula
    var matRotula = new THREE.MeshPhongMaterial({color: 'white',
                                                 specular:'white',
@@ -325,6 +322,8 @@ function loadScene() {
    new THREE.Face3(7,5,9),
    new THREE.Face3(5,10,9)
    );
+
+   geopinza.computeFaceNormals();
    
    //Geometrias
    var geosuelo = new THREE.PlaneGeometry(1000,1000,100,100);
@@ -456,10 +455,6 @@ function loadScene() {
    //scene.add(new THREE.AxisHelper(3));
 }
 
-function update() {
-   geopinza.colorsNeedUpdate = true;   
-}
-
 function render()
 {
    //Siguiente frame
@@ -467,7 +462,6 @@ function render()
    
    //Borrar anterior frame
    renderer.clear();
-   update();
 
    //Renderizar el frame
    //Camara perspectiva
