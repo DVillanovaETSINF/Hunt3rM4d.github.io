@@ -16,7 +16,7 @@ var renderer, scene, camera;
 var robot, angulo = 0;
 var base, brazo, antebrazo, pinzas, pinza_izq, pinza_der;
 var cameraControls;
-
+var geopinza;
 //Camara cenital
 var l = -100;
 var r = 100;
@@ -272,16 +272,19 @@ function loadScene() {
    //Metal sin brillos --> Oxidado?
    var matMetalSB = new THREE.MeshLambertMaterial({color: 'brown', map: texturaMetal});
    //Material pinzas
-   var matPinzas = new THREE.MeshLambertMaterial({color: 'gray', wireframe: false});
+   var matPinzas = new THREE.MeshPhongMaterial({color: 'white',
+                                                wireframe: false,
+                                                specular:'white',
+                                                shininess: 50,
+                                                side: THREE.DoubleSide});
    //Material rotula
    var matRotula = new THREE.MeshPhongMaterial({color: 'white',
                                                 specular:'white',
                                                 shininess: 60,
                                                 envMap: mapaEntorno});
 
-
    //Geometría pinzas
-   var geopinza = new THREE.Geometry();
+   geopinza = new THREE.Geometry();
    //Añadir vértices componen caras
    geopinza.vertices.push(
    new THREE.Vector3(0,0,0),
@@ -389,7 +392,7 @@ function loadScene() {
    nervio4.position.y = 40;
    nervio4.position.x = 12;
    nervio4.position.z = -12;
-   var mano = new THREE.Mesh(geomano,material);
+   var mano = new THREE.Mesh(geomano,matMetalSB);
    mano.receiveShadow = true;
    mano.castShadow = true;
    mano.position.y = 80;
@@ -434,7 +437,27 @@ function loadScene() {
    
    scene.add(robot);
    
+   //Habitación
+   var shader = THREE.ShaderLib.cube;
+   shader.uniforms.tCube.value = mapaEntorno;
+
+   var matParedes = new THREE.ShaderMaterial({
+      fragmentShader: shader.fragmentShader,
+      vertexShader: shader.vertexShader,
+      uniforms: shader.uniforms,
+      depthWrite: false,
+      side: THREE.BackSide
+   });
+
+   var habitacion = new THREE.Mesh(new THREE.CubeGeometry(1000,1000,1000), matParedes);
+   habitacion.position.y = 0;
+   scene.add(habitacion);
+
    //scene.add(new THREE.AxisHelper(3));
+}
+
+function update() {
+   geopinza.colorsNeedUpdate = true;   
 }
 
 function render()
@@ -444,6 +467,7 @@ function render()
    
    //Borrar anterior frame
    renderer.clear();
+   update();
 
    //Renderizar el frame
    //Camara perspectiva
