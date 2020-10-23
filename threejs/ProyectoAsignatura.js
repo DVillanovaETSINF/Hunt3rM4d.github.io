@@ -6,6 +6,7 @@
  * @requires three.min_r96.js, coordinates.js, orbitControls.js, dat.gui.js, tween.min.js, stats.min.js
  * Autor: David Villanova Aparisi
  * Fecha inicio: 08-10-2020
+ * Fecha fin: 23-10-2020
  */
 
 // Motor, escena y cámara
@@ -32,12 +33,18 @@ var velocGiro = 0.1745329;
 //Booleanos pulsacion teclas de movimiento
 var izq_pres, der_pres, arr_pres, abj_pres;
 
+//Luces
+var luzSol, luzAmbiente, luzFocal;
+var modoDia;
+const d = 100;
+var path = "images/";
+
 //Físicas
 //Mundo físico y reloj
 var world, reloj;
 
 //Objetos físicos
-var laberinto, esfera, planoInvis;
+var laberinto, esfera, planoInvis, habitacion, sueloHabitacion; 
 
 //Control tiempo
 var antes = Date.now();
@@ -48,16 +55,18 @@ init();
 setupKeyControls();
 setupGui();
 loadWorld();
+actualizarPosicionFoco();
 render();
 
 //Construccion esfera
-function esfera( radio, posicion, material ){
+function esfera( radio, posicion, mat, matFis ){
 	var masa = 1;
-	this.body = new CANNON.Body( {mass: masa, material: material} );
+	this.body = new CANNON.Body( {mass: masa, material: matFis} );
 	this.body.addShape( new CANNON.Sphere( radio ) );
 	this.body.position.copy( posicion );
-	this.visual = new THREE.Mesh( new THREE.SphereGeometry( radio ), 
-		          new THREE.MeshBasicMaterial( {wireframe: true, color: 'blue'} ) );
+   this.visual = new THREE.Mesh( new THREE.SphereGeometry( radio,64,64 ), mat);
+   this.visual.receiveShadow = true;
+   this.visual.castShadow = true;
    this.visual.position.copy( this.body.position );
 }
 
@@ -98,8 +107,12 @@ function laberinto(dim, off, mat, matFis) {
       var dim_fis_i = new CANNON.Vec3(dim[i].x/2, dim[i].y/2, dim[i].z/2);
       this.body.addShape( new CANNON.Box(dim_fis_i), off_i);
 
+      var numSlices = Math.round(Math.max(dx,dz)/2);
+
       //Crear caja y ajustar posición visual
-      var vis_i = new THREE.Mesh( new THREE.BoxGeometry(dx,dy,dz), mat[i]);
+      var vis_i = new THREE.Mesh( new THREE.BoxGeometry(dx,dy,dz,dx,dy,dz), mat[i]);
+      vis_i.receiveShadow = true;
+      vis_i.castShadow = true;
       vis_i.position.x = Number(off_i.x);
       vis_i.position.y = Number(off_i.y);
       vis_i.position.z = Number(off_i.z);
@@ -132,7 +145,7 @@ function initPhysicWorld() {
    //Reglas del mundo
    world = new CANNON.World();
    world.gravity.set(0,-9.8,0);
-   world.solver.iterations = 10;
+   world.solver.iterations = 25;
 
    //Materiales
    var matMadera = new CANNON.Material("matMadera");
@@ -143,7 +156,7 @@ function initPhysicWorld() {
    world.addMaterial(matInvis);
 
    var esferaMaderaContactMaterial = new CANNON.ContactMaterial(matMadera,matEsfera, 
-                                                               {friction: 0.02,
+                                                               {friction: 0.03,
                                                                 restitution: 0});
    var esferaMaderaInvisContactMaterial = new CANNON.ContactMaterial(matInvis,matEsfera,
                                                                      {friction: 0,
@@ -217,6 +230,10 @@ function setupKeyControls() {
          focusTopCamera = !focusTopCamera
          updateCameras();
          break;
+         //Tecla d
+         case 68:
+         alternateDayMode();
+         break;
          //Tecla r
          case 83:
          reiniciar();
@@ -262,6 +279,7 @@ function reiniciar() {
    //Volver a colocar cámaras en su sitio
    camera.position.set(0,150,50);
    camera.lookAt(new THREE.Vector3(0,0,0));
+   actualizarPosicionFoco();
 
    //Reiniciar cameraControls
    cameraControls.target.set(0,0,0);
@@ -271,13 +289,16 @@ function reiniciar() {
 function setupGui() {
    //Controles
    effectController = {
-      g: -9.8,
+      g: 9.8,
       altCam: function() {
          focusTopCamera = !focusTopCamera;
          updateCameras();
       },
       reiniciar: function() {
          reiniciar();
+      },
+      diaNoche: function() {
+         alternateDayMode();
       }
    }
 
@@ -286,13 +307,13 @@ function setupGui() {
 
    //Construcción menu
    var h = gui.addFolder("Configuración");
-   var sensorGrav = h.add(effectController,"g", -20, -2, 0.1).name("Gravedad");
+   var sensorGrav = h.add(effectController,"g", 2, 20, 0.1).name("Gravedad");
    h.add(effectController, "altCam").name("Alternar vistas");
 
    gui.add(effectController,"reiniciar").name("Reiniciar");
-
+   gui.add(effectController,"diaNoche").name("Alternar dia-noche");
    sensorGrav.onChange(function(grav) {
-      world.gravity.set(0,grav,0);
+      world.gravity.set(0,-grav,0);
    });
 }
 
@@ -317,6 +338,133 @@ function setCameras(ar) {
 
    scene.add(camera);
    scene.add(planta)
+}
+
+function setupLights() {
+   //Permitir sombras arrojadas
+   renderer.shadowMap.enabled = true;
+   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+   //Modo día
+   modoDia = true;
+
+   //Luz ambiente
+   luzAmbiente = new THREE.AmbientLight(0xFFFFFF, 0.15);
+   scene.add(luzAmbiente);
+
+   //Luz del sol
+   luzSol = new THREE.DirectionalLight(0xFFFFFF, 1);
+   luzSol.position.set(100, 200,100);
+   luzSol.castShadow = true;
+   //Arreglar problema sombras chungas
+   luzSol.shadow.camera.left = -d;
+   luzSol.shadow.camera.right = d;
+   luzSol.shadow.camera.bottom = -d;
+   luzSol.shadow.camera.top = d;
+   luzSol.shadow.camera.near = 200;
+   luzSol.shadow.camera.far = 800;
+   scene.add(luzSol);
+   scene.add(new THREE.CameraHelper(luzSol.shadow.camera));
+
+   //Luz focal (deshabilitada en modo día)
+   luzFocal = new THREE.SpotLight(0xFFFFFF, 0.0);
+   luzFocal.target.position.set(0,0,0);
+   luzFocal.angle = Math.PI / 5;
+   luzFocal.penumbra = 0.6;
+   luzFocal.castShadow = false;
+   //Arreglar problema sombras chungas
+   luzFocal.shadow.camera.near = 0.1;
+   luzFocal.shadow.camera.far = 1000;
+   luzFocal.shadow.camera.fov = 36;
+   scene.add(luzFocal);
+}
+
+function alternateDayMode() {
+   modoDia = !modoDia;
+
+   if(modoDia) {
+      luzAmbiente.intensity = 0.15;
+      luzSol.intensity = 1;
+      luzSol.castShadow = true;
+      luzFocal.intensity = 0.0;
+      luzFocal.castShadow = false;
+
+      //Actualizacion habitacion
+      scene.remove(sueloHabitacion);
+      scene.remove(habitacion);
+
+      //Mapa entorno
+      var paredesHabitacion = [path + 'mapaEntornoDia/posx.jpg', path + 'mapaEntornoDia/negx.jpg',
+      path + 'mapaEntornoDia/posy.jpg', path + 'mapaEntornoDia/negy.jpg',
+      path + 'mapaEntornoDia/posz.jpg', path + 'mapaEntornoDia/negz.jpg',];
+      var mapaEntornoHabitacion = new THREE.CubeTextureLoader().load(paredesHabitacion);
+
+      //Construccion habitacion
+      var shader = THREE.ShaderLib.cube;
+      shader.uniforms.tCube.value = mapaEntornoHabitacion;
+
+      var matHabitacion = new THREE.ShaderMaterial({
+      fragmentShader: shader.fragmentShader,
+      vertexShader: shader.vertexShader,
+      uniforms: shader.uniforms,
+      depthWrite: false,
+      side: THREE.BackSide
+      });
+
+      habitacion = new THREE.Mesh(new THREE.CubeGeometry(400,400,400), matHabitacion);
+      habitacion.position.y = 0;
+      scene.add(habitacion);
+
+      var texturaSueloHabitacion = new THREE.TextureLoader().load(path+'mapaEntornoDia/negy.jpg');
+      var matSueloHabitacion = new THREE.MeshLambertMaterial({color:'white', map:texturaSueloHabitacion});
+      sueloHabitacion = new THREE.Mesh(new THREE.PlaneGeometry(400,400),matSueloHabitacion);
+      sueloHabitacion.receiveShadow = true;
+      sueloHabitacion.rotation.x = -Math.PI / 2;
+      sueloHabitacion.rotation.z = Math.PI;
+      sueloHabitacion.position.y = -200;
+      scene.add(sueloHabitacion);
+
+   } else {
+      luzAmbiente.intensity = 0.1;
+      luzSol.intensity = 0.0;
+      luzSol.castShadow = false;
+      luzFocal.intensity = 0.6;
+      luzFocal.castShadow = true;
+
+      //Actualizacion habitacion
+      scene.remove(sueloHabitacion);
+      scene.remove(habitacion);
+      
+      var paredesHabitacion = [path + 'mapaEntornoNoche/posx.jpg', path + 'mapaEntornoNoche/negx.jpg',
+                  path + 'mapaEntornoNoche/posy.jpg', path + 'mapaEntornoNoche/negy.jpg',
+                  path + 'mapaEntornoNoche/posz.jpg', path + 'mapaEntornoNoche/negz.jpg',];
+      var mapaEntornoHabitacion = new THREE.CubeTextureLoader().load(paredesHabitacion);
+
+      //Construccion habitacion
+      var shader = THREE.ShaderLib.cube;
+      shader.uniforms.tCube.value = mapaEntornoHabitacion;
+
+      var matHabitacion = new THREE.ShaderMaterial({
+         fragmentShader: shader.fragmentShader,
+         vertexShader: shader.vertexShader,
+         uniforms: shader.uniforms,
+         depthWrite: false,
+         side: THREE.BackSide
+      });
+
+      habitacion = new THREE.Mesh(new THREE.CubeGeometry(400,400,400), matHabitacion);
+      habitacion.position.y = 0;
+      scene.add(habitacion);
+
+      var texturaSueloHabitacion = new THREE.TextureLoader().load(path+'mapaEntornoNoche/negy.jpg');
+      var matSueloHabitacion = new THREE.MeshBasicMaterial({color:'white', map:texturaSueloHabitacion});
+      sueloHabitacion = new THREE.Mesh(new THREE.PlaneGeometry(400,400),matSueloHabitacion);
+      sueloHabitacion.receiveShadow = true;
+      sueloHabitacion.rotation.x = -Math.PI / 2;
+      sueloHabitacion.rotation.z = Math.PI;
+      sueloHabitacion.position.y = -200;
+      scene.add(sueloHabitacion);
+   }
 }
 
 function init() {
@@ -346,11 +494,24 @@ function init() {
    cameraControls = new THREE.OrbitControls( camera, renderer.domElement);
    //Punto de interes sobre el que se va a orbitar
    cameraControls.target.set(0,0,0);
-   //Que no se puedan utilizar las teclas
-   cameraControls.noKeys = true;
+   //Que no se puedan utilizar las teclas, tampoco panning
+   cameraControls.enableKeys = false;
+   cameraControls.enablePan = false;
 
-   //Captura de eventos --> Tolerancia a resize
+   
+
+   //Montar las luces
+   setupLights();
+
+   //Captura de eventos 
+   //Tolerancia a resize
    window.addEventListener('resize',updateAspectRatio);
+   //Cambio de posición de cámara y del foco pegado
+   cameraControls.addEventListener('change',actualizarPosicionFoco);
+}
+
+function actualizarPosicionFoco() {
+   luzFocal.position.copy(camera.position);
 }
 
 function updateAspectRatio() {
@@ -399,6 +560,7 @@ function update() {
  */
 function loadWorld()
 {
+   
    //Materiales
    var matFis, matFisInvis, materialEsfera;
    for( i=0; i<world.materials.length; i++){
@@ -408,14 +570,31 @@ function loadWorld()
    }
    
    //Radio, posicion, material
-   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 4.1, -23 ), materialEsfera );
+   var matVisEsfera = new THREE.MeshStandardMaterial({
+      color: "#FFFFFF",
+      roughness: 0.7,
+      metalness: 0.9
+   });
+   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 4.1, -23 ), matVisEsfera, materialEsfera );
    world.addBody( esfera.body );
    scene.add( esfera.visual );
    
    
    //Laberinto
+   /* ANTIGUOS MATERIALES
    var matVisSuelo = new THREE.MeshBasicMaterial( {wireframe: false, color: 'green' } );
-   var matVisPared = new THREE.MeshBasicMaterial( {wireframe: false, color: 'red'});
+   var matVisPared = new THREE.MeshBasicMaterial( {wireframe: false, color: 'red'});*/
+
+   var texturaSuelo = new THREE.TextureLoader().load(path+'MaderaSuelo.jpg');
+   texturaSuelo.magFilter = THREE.LinearFilter;
+   texturaSuelo.minFilter = THREE.LinearFilter;
+   var matVisSuelo = new THREE.MeshLambertMaterial({color: 'white', map: texturaSuelo});
+
+   var texturaParedes = new THREE.TextureLoader().load(path+'MaderaParedes.jpg');
+   texturaParedes.magFilter = THREE.LinearFilter;
+   texturaParedes.minFilter = THREE.LinearFilter;
+   var matVisPared = new THREE.MeshLambertMaterial({color: 'white', map: texturaParedes});
+
    var matInvis = new THREE.MeshBasicMaterial({opacity: 0, transparent: true});
 
    //laberinto = new caja( new CANNON.Vec3(50,5,50), new CANNON.Vec3(0,0,0), materialParedes);
@@ -546,8 +725,46 @@ function loadWorld()
    world.addBody(laberinto.body);
    world.addBody(planoInvis.body);
    scene.add(laberinto.visual);
-   scene.add(planoInvis.visual);
-   scene.add(THREE.AxisHelper(100,100,100))
+   scene.add(planoInvis.visual);   
+
+   //Habitación (mapa entorno)
+   //Mapa entorno
+   var paredesHabitacion = [path + 'mapaEntornoDia/posx.jpg', path + 'mapaEntornoDia/negx.jpg',
+                  path + 'mapaEntornoDia/posy.jpg', path + 'mapaEntornoDia/negy.jpg',
+                  path + 'mapaEntornoDia/posz.jpg', path + 'mapaEntornoDia/negz.jpg',];
+   var mapaEntornoHabitacion = new THREE.CubeTextureLoader().load(paredesHabitacion);
+
+   //Construccion habitacion
+   var shader = THREE.ShaderLib.cube;
+   shader.uniforms.tCube.value = mapaEntornoHabitacion;
+
+   var matHabitacion = new THREE.ShaderMaterial({
+      fragmentShader: shader.fragmentShader,
+      vertexShader: shader.vertexShader,
+      uniforms: shader.uniforms,
+      depthWrite: false,
+      side: THREE.BackSide
+   });
+
+   habitacion = new THREE.Mesh(new THREE.CubeGeometry(400,400,400), matHabitacion);
+   habitacion.position.y = 0;
+   scene.add(habitacion);
+
+   var texturaSueloHabitacion = new THREE.TextureLoader().load(path+'mapaEntornoDia/negy.jpg');
+   var matSueloHabitacion = new THREE.MeshLambertMaterial({color:'white', map:texturaSueloHabitacion});
+   sueloHabitacion = new THREE.Mesh(new THREE.PlaneGeometry(400,400),matSueloHabitacion);
+   sueloHabitacion.receiveShadow = true;
+   sueloHabitacion.rotation.x = -Math.PI / 2;
+   sueloHabitacion.rotation.z = Math.PI;
+   sueloHabitacion.position.y = -200;
+   scene.add(sueloHabitacion);
+
+   var masa = 0;
+   var sueloInvis = new CANNON.Body({mass: 0, material: matFis});
+   var dim_fis = new CANNON.Vec3(400/2, 1, 400/2);
+   sueloInvis.addShape( new CANNON.Box(dim_fis));
+   sueloInvis.position.copy(new CANNON.Vec3(0,-200,0));
+   world.addBody(sueloInvis);
 }
 
 function render()
