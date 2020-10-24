@@ -28,6 +28,7 @@ var effectController;
 //Angulo del laberinto
 var anguloZ = 0;
 var anguloX = 0;
+var distPlanoInvis = 6.1;
 //Velocidad de giro (10º/sg)
 var velocGiro = 0.1745329;
 //Booleanos pulsacion teclas de movimiento
@@ -57,6 +58,14 @@ setupGui();
 loadWorld();
 actualizarPosicionFoco();
 render();
+
+function cross(A,B) {
+   return new THREE.Vector3(
+      A.y * B.z - A.z * B.y,
+      A.z * B.x - A.x * B.z,
+      A.x * B.y - A.y * B.x
+   );
+}
 
 //Construccion esfera
 function esfera( radio, posicion, mat, matFis ){
@@ -144,8 +153,8 @@ function planoInvis(dim,pos,mat,matFis) {
 function initPhysicWorld() {
    //Reglas del mundo
    world = new CANNON.World();
-   world.gravity.set(0,-9.8,0);
-   world.solver.iterations = 25;
+   world.gravity.set(0,-18.6,0);
+   world.solver.iterations = 50;
 
    //Materiales
    var matMadera = new CANNON.Material("matMadera");
@@ -157,7 +166,7 @@ function initPhysicWorld() {
 
    var esferaMaderaContactMaterial = new CANNON.ContactMaterial(matMadera,matEsfera, 
                                                                {friction: 0.03,
-                                                                restitution: 0});
+                                                                restitution: 0.1});
    var esferaMaderaInvisContactMaterial = new CANNON.ContactMaterial(matInvis,matEsfera,
                                                                      {friction: 0,
                                                                       restitution: 1});
@@ -235,7 +244,7 @@ function setupKeyControls() {
          alternateDayMode();
          break;
          //Tecla r
-         case 83:
+         case 82:
          reiniciar();
          break;
      }
@@ -261,7 +270,7 @@ function setupKeyControls() {
           break;
       }
     };
- }
+}
 
 function reiniciar() {
    //Fijar angulo del laberinto a 0,0
@@ -269,7 +278,7 @@ function reiniciar() {
    update();
 
    //Eliminar todo movimiento de la esfera y devolverla a la pos. inic.
-   esfera.body.position = new CANNON.Vec3(-23, 4.1, -23);
+   esfera.body.position = new CANNON.Vec3(-23, 4.05, -23);
    esfera.body.velocity = new CANNON.Vec3(0,0,0);
    esfera.body.angularVelocity = new CANNON.Vec3(0,0,0);
    esfera.body.force = new CANNON.Vec3(0,0,0);
@@ -313,7 +322,7 @@ function setupGui() {
    gui.add(effectController,"reiniciar").name("Reiniciar");
    gui.add(effectController,"diaNoche").name("Alternar dia-noche");
    sensorGrav.onChange(function(grav) {
-      world.gravity.set(0,-grav,0);
+      world.gravity.set(0,-grav*2,0);
    });
 }
 
@@ -337,7 +346,8 @@ function setCameras(ar) {
    planta.updateProjectionMatrix();
 
    scene.add(camera);
-   scene.add(planta)
+   scene.add(planta);
+   //scene.add(THREE.AxisHelper(100,100,100));
 }
 
 function setupLights() {
@@ -356,15 +366,17 @@ function setupLights() {
    luzSol = new THREE.DirectionalLight(0xFFFFFF, 1);
    luzSol.position.set(100, 200,100);
    luzSol.castShadow = true;
+   luzSol.shadow.mapSize.width = 2048;
+   luzSol.shadow.mapSize.height = 2048;
    //Arreglar problema sombras chungas
    luzSol.shadow.camera.left = -d;
    luzSol.shadow.camera.right = d;
    luzSol.shadow.camera.bottom = -d;
    luzSol.shadow.camera.top = d;
    luzSol.shadow.camera.near = 200;
-   luzSol.shadow.camera.far = 800;
+   luzSol.shadow.camera.far = 600;
    scene.add(luzSol);
-   scene.add(new THREE.CameraHelper(luzSol.shadow.camera));
+   //scene.add(new THREE.CameraHelper(luzSol.shadow.camera));
 
    //Luz focal (deshabilitada en modo día)
    luzFocal = new THREE.SpotLight(0xFFFFFF, 0.0);
@@ -372,6 +384,8 @@ function setupLights() {
    luzFocal.angle = Math.PI / 5;
    luzFocal.penumbra = 0.6;
    luzFocal.castShadow = false;
+   luzFocal.shadow.mapSize.width = 2048;
+   luzFocal.shadow.mapSize.height = 2048;
    //Arreglar problema sombras chungas
    luzFocal.shadow.camera.near = 0.1;
    luzFocal.shadow.camera.far = 1000;
@@ -540,19 +554,44 @@ function update() {
    if(anguloZ < (-Math.PI)/6) anguloZ = -Math.PI/6;
    if(anguloZ > Math.PI/6) anguloZ = Math.PI/6;
 
-   //Actualizacion obj. físicos
-   esfera.visual.position.copy(esfera.body.position);
-   esfera.visual.quaternion.copy(esfera.body.quaternion);
+   
 
    laberinto.body.quaternion.setFromEuler(anguloX,0,anguloZ);
    laberinto.visual.position.copy(laberinto.body.position);
    laberinto.visual.quaternion.copy(laberinto.body.quaternion);
 
+   
+   
+   
+   //Primera aproximación --> Calculo más o menos correcto, pero vector de longitud 2?
+   //var normalVec = new THREE.Vector3(-Math.sin(anguloZ),Math.cos(anguloZ)+Math.cos(anguloX),Math.sin(anguloX));
+   
+   
+   /*var lenVec = Math.sqrt(normalVec.x*normalVec.x + normalVec.y*normalVec.y + normalVec.z*normalVec.z);
+   console.log(lenVec);
+   normalVec = new THREE.Vector3(normalVec.x / lenVec, normalVec.y / lenVec, normalVec.z / lenVec);
+   lenVec = Math.sqrt(normalVec.x*normalVec.x + normalVec.y*normalVec.y + normalVec.z*normalVec.z);
+   console.log(lenVec);*/
+   
+   //Poner el centro del plano invisible en punto a distancia de 0,0,0
+   //siguiendo la normal al suelo del laberinto
+   var vecZ = new THREE.Vector3(Math.cos(anguloZ), Math.sin(anguloZ), 0); 
+   var vecX = new THREE.Vector3(0, Math.sin(anguloX), -Math.cos(anguloX));
+   var normalVec = cross(vecZ,vecX);
+   planoInvis.body.position.set(normalVec.x*distPlanoInvis,normalVec.y*distPlanoInvis,normalVec.z*distPlanoInvis);
+   
+   //Actualizar rotación (y visual si hiciera falta para debug)
    planoInvis.body.quaternion.setFromEuler(anguloX,0,anguloZ);
    planoInvis.visual.position.copy(planoInvis.body.position);
    planoInvis.visual.quaternion.copy(planoInvis.body.quaternion);
 
    world.step(deltaSg);
+
+   //Actualizacion obj. físicos
+   esfera.visual.position.copy(esfera.body.position);
+   esfera.visual.quaternion.copy(esfera.body.quaternion);
+
+   
 }
 
 /**
@@ -575,7 +614,7 @@ function loadWorld()
       roughness: 0.7,
       metalness: 0.9
    });
-   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 4.1, -23 ), matVisEsfera, materialEsfera );
+   esfera = new esfera( 1.5, new CANNON.Vec3( -23, 4.05, -23 ), matVisEsfera, materialEsfera );
    world.addBody( esfera.body );
    scene.add( esfera.visual );
    
@@ -721,7 +760,7 @@ function loadWorld()
    ];
    
    laberinto = new laberinto(dim, off, mat, matFis);
-   planoInvis = new planoInvis(new CANNON.Vec3(50,0.5,50), new CANNON.Vec3(0,6.1,0), matInvis, matFisInvis);
+   planoInvis = new planoInvis(new CANNON.Vec3(50,1,50), new CANNON.Vec3(0,distPlanoInvis,0), matInvis, matFisInvis);
    world.addBody(laberinto.body);
    world.addBody(planoInvis.body);
    scene.add(laberinto.visual);
@@ -746,25 +785,29 @@ function loadWorld()
       side: THREE.BackSide
    });
 
-   habitacion = new THREE.Mesh(new THREE.CubeGeometry(400,400,400), matHabitacion);
+   habitacion = new THREE.Mesh(new THREE.CubeGeometry(500,500,500), matHabitacion);
    habitacion.position.y = 0;
    scene.add(habitacion);
 
    var texturaSueloHabitacion = new THREE.TextureLoader().load(path+'mapaEntornoDia/negy.jpg');
    var matSueloHabitacion = new THREE.MeshLambertMaterial({color:'white', map:texturaSueloHabitacion});
-   sueloHabitacion = new THREE.Mesh(new THREE.PlaneGeometry(400,400),matSueloHabitacion);
+   sueloHabitacion = new THREE.Mesh(new THREE.PlaneGeometry(500,500),matSueloHabitacion);
    sueloHabitacion.receiveShadow = true;
    sueloHabitacion.rotation.x = -Math.PI / 2;
    sueloHabitacion.rotation.z = Math.PI;
-   sueloHabitacion.position.y = -200;
+   sueloHabitacion.position.y = -250;
    scene.add(sueloHabitacion);
 
    var masa = 0;
    var sueloInvis = new CANNON.Body({mass: 0, material: matFis});
-   var dim_fis = new CANNON.Vec3(400/2, 1, 400/2);
+   var dim_fis = new CANNON.Vec3(500/2, 1, 500/2);
    sueloInvis.addShape( new CANNON.Box(dim_fis));
-   sueloInvis.position.copy(new CANNON.Vec3(0,-200,0));
+   sueloInvis.position.copy(new CANNON.Vec3(0,-250,0));
    world.addBody(sueloInvis);
+
+   //Los malditos constraints no sirven
+   //var constr = new CANNON.ConeTwistConstraint(esfera.body, laberinto.body);
+   //world.addConstraint(constr);
 }
 
 function render()
