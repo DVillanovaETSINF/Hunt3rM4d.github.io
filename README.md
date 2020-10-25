@@ -16,4 +16,4 @@ La configuración de la aplicación, así como el reinicio del nivel, se puede h
 - Tecla 'D': Alternar entre modo día y noche.
 - Tecla 'R': Reiniciar el nivel.
 
-La cámara perspectiva puede rotarse si se mantiene pulsado el click izquierdo del ratón y se desplaza el mismo. Cuando el modo noche está activado, un foco de luz persigue la posición de la cámara. También se puede hacer zoom con la rueda del ratón.
+La cámara perspectiva puede rotarse si se mantiene pulsado el click izquierdo del ratón y se desplaza el mismo. Además, permitimos hacer zoom con la rueda del ratón. Cuando el modo noche está activado, un foco de luz persigue la posición de la cámara. El efecto del movimiento del foco se puede observar en el brillo de los materiales así como en las sombras arrojadas en la cámara cenital.
