@@ -318,9 +318,9 @@ function setupGui() {
    var h = gui.addFolder("Configuración");
    var sensorGrav = h.add(effectController,"g", 2, 20, 0.1).name("Gravedad");
    h.add(effectController, "altCam").name("Alternar vistas");
+   h.add(effectController,"diaNoche").name("Alternar dia-noche");
 
    gui.add(effectController,"reiniciar").name("Reiniciar");
-   gui.add(effectController,"diaNoche").name("Alternar dia-noche");
    sensorGrav.onChange(function(grav) {
       world.gravity.set(0,-grav*2,0);
    });
