@@ -585,7 +585,7 @@ function update() {
    planoInvis.visual.position.copy(planoInvis.body.position);
    planoInvis.visual.quaternion.copy(planoInvis.body.quaternion);
 
-   world.step(deltaSg);
+   world.step(deltaSg*1.33);
 
    //Actualizacion obj. físicos
    esfera.visual.position.copy(esfera.body.position);
