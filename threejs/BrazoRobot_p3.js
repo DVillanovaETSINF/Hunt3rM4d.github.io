@@ -43,22 +43,22 @@ function setupKeyControls() {
        //Flecha izq
        case 37:
        robot.position.z += 1;
-       planta.position.z += 1;
+       //planta.position.z += 1;
        break;
        //Flecha arr
        case 38:
        robot.position.x -= 1;
-       planta.position.x -= 1;
+       //planta.position.x -= 1;
        break;
        //Flecha der
        case 39:
        robot.position.z -= 1;
-       planta.position.z -= 1;
+       //planta.position.z -= 1;
        break;
        //Flecha abj
        case 40:
        robot.position.x += 1;
-       planta.position.x += 1;
+       //planta.position.x += 1;
        break;
      }
    };
